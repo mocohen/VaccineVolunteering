@@ -1,0 +1,10 @@
+# Function dependencies, for example:
+# package>=version
+scrapy
+scraperapi-sdk
+requests
+google-api-core
+google-auth
+google-cloud-secret-manager
+google-cloud-storage
+mailjet_rest
