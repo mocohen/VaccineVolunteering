@@ -6,24 +6,61 @@ from scrapy.http import TextResponse, HtmlResponse
 
 
 def get_url(url, client):
+    '''Generate proxy scraper api url
+
+    Args:
+        url (string): url 
+        client (ScraperAPIClient): scraper api client
+    Returns:
+        proxy_url (string): proxy url
+    '''
 
     return client.scrapyGet(url = url, country_code = "US")
 
 
 def request_page(url, client):
+    '''retrieve html text response from url
+
+    Args:
+        url (string): url 
+        client (ScraperAPIClient): scraper api client
+    Returns:
+        resp (TextResponse): html text response
+    '''
+
     req = requests.get(get_url(url, client))
     resp = TextResponse(req.url, body=req.text, encoding='utf-8')
     return resp
 
 def get_new_rows(response):
+    '''search and find new rows in POST response
+
+    Args:
+        response (Response): POST response 
+    Returns:
+        text (string): string with new rows
+    '''
+
+    #find beginning of new rows string
     beg_regex = re.compile('\|\d+\|updatePanel\|ContentPlaceHolder1_UpdatePanelSchedule\|')
     start_ind = beg_regex.search(response.text).end()
 
+    # find next update panel after start_ind
     for m in re.finditer('\|\d+\|updatePanel\|', response.text):
         if m.start() > start_ind:
             return response.text[start_ind: m.start()]
 
 def check_date(row_id, date_range_text, top_response):
+    '''Check date range for new events
+
+    Args:
+        row_id (string): number id of date range as a string
+        date_range_text (string): date range as text
+        top_response (Response): html response of main page
+    Returns:
+        events (string): string with available events
+    '''
+
     view_state = top_response.xpath('//div[@class="aspNetHidden"]/input[@name="__VIEWSTATE"]/@value').get()
     event_validation = top_response.xpath('//div[@class="aspNetHidden"]/input[@name="__EVENTVALIDATION"]/@value').get()
     response = request_date(row_id, view_state, event_validation)
@@ -45,8 +82,15 @@ def check_date(row_id, date_range_text, top_response):
     return
 
 def request_date(row_id, view_state, event_validation):
-    # import requests
+    '''Generate POST request for changing row
 
+    Args:
+        row_id (string): number id of date range as a string
+        view_state (string): view state string from main page response
+        event_validation (string): event validation string from main page response
+    Returns:
+        response (Response): POST response for changing dates
+    '''
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:84.0) Gecko/20100101 Firefox/84.0',
         'Accept': '*/*',

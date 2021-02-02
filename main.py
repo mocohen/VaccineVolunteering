@@ -16,7 +16,17 @@ from datetime import datetime, timedelta
 
 
 
-def email_opportunity(event, api_key, api_secret, to_address='+19176993314@tmomail.net'):
+def email_opportunity(event, api_key, api_secret, from_address, to_address):
+    '''
+    email opportunity using mailjest rest
+
+    Args:
+        event (string): string formatted list of available events 
+        api_key (string): mailjet api key
+        api_secret (string): mailjet api secret
+        from_address (string): from email address
+        to_address (string): to email address
+    '''
     from mailjet_rest import Client
     import os
 
@@ -25,7 +35,7 @@ def email_opportunity(event, api_key, api_secret, to_address='+19176993314@tmoma
       'Messages': [
         {
           "From": {
-            "Email": "moeco@wholesaleexecutiveinsider.com",
+            "Email": from_address,
             "Name": "Morris"
           },
           "To": [
@@ -46,49 +56,36 @@ def email_opportunity(event, api_key, api_secret, to_address='+19176993314@tmoma
 
 
 
-def check_availability():
+def check_availability(from_address, to_address):
+    ''' Check for events with availability
+
+    Args:
+        from_address (string) : email address to send notifications from
+        to_address (string) : email address to send notifications to
+
+    '''
+
+    # get secrets from google cloud
     mailjet_key = gc_storage_utils.access_secret_version(234888381105, 'mailjetKey', 1)
     mailjet_secret = gc_storage_utils.access_secret_version(234888381105, 'mailjetSecret', 1)
     scrapy_api_key = gc_storage_utils.access_secret_version(234888381105, 'scraper_api_key', 1)
 
+    # start scraper api client
     client = ScraperAPIClient(scrapy_api_key)
 
     
     url = 'https://volunteer.covidvaccineseattle.org/'
 
+    # get html response
     response = html_utils.request_page(url, client)
 
-    # past_events = ['SeattleU Jan 25th through 30th: Washington', 'SeattleU Jan 18th through 23rd: Washington', 'SeattleU Feb 1st through 6th: Washington', 'SeattleU Feb 8th through 13th: Washington', 'SeattleU Feb 15th through 20th: Washington']
-    # past_events = ['SeattleU Jan 25th through 30th: Washington', 'SeattleU Jan 18th through 23rd: Washington', 'SeattleU Feb 1st through 6th: Washington']
-    # past_events = []
-    # all_events = response.xpath('//div[@id="ContentPlaceHolder1_UpdatePanelOpKey"]').xpath('.//option/text()').getall()[1:]
 
-    # bucket = 'vaccine_checker'
-    # filepath =  '/tmp/'
-    # filename = 'past_weeks.txt'
-
-    # gc_storage_utils.download_blob(bucket, filename, filepath+filename)
-
-    # with open(filepath+filename, 'r') as reader:
-    #   # Read and print the entire file line by line
-    #   for line in reader:
-    #       past_events.append(line.strip())
-
-    # print(past_events)
-    # for event in all_events:
-    #     if event not in past_events:
-    #         email_opportunity(event, mailjet_key, mailjet_secret, 'moesvaccinearmy@googlegroups.com')
-    
-    
-
-    # with open(filepath+filename,  'w') as f:
-    #   for event in all_events:
-    #     print(f'{event}', file=f)
-    # gc_storage_utils.upload_blob(bucket, filepath+filename, filename)
+    # loop through available weeks, check for availability
     for opt in response.xpath('//div[@id="ContentPlaceHolder1_UpdatePanelOpKey"]').xpath('.//option')[1:]:
       new_events = html_utils.check_date(opt.xpath('.//@value').get(), opt.xpath('text()').get(), top_response=response)
       if new_events:
-        email_opportunity(event, mailjet_key, mailjet_secret, 'moesvaccinearmy@googlegroups.com')
+        # email opportunity if new event
+        email_opportunity(event, mailjet_key, mailjet_secret, from_address, to_address)
 
 
 
@@ -101,6 +98,5 @@ def hello_pubsub(event, context):
          context (google.cloud.functions.Context): Metadata for the event.
     """
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
-    print(pubsub_message)
-    check_availability()
-
+    pub_dict = json.loads(pubsub_message)
+    check_availability(pub_dict['from'], pub_dict['to'])
