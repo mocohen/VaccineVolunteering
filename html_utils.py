@@ -127,12 +127,14 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     new_text_response = HtmlResponse(url="my HTML string", body=html_text_string, encoding='utf-8')
     
     events = []
+    full_events = []
     for tr in new_text_response.xpath('//tr'):
         if len(tr.xpath('td/div/select')) > 0:
             events.append(tr.xpath('./td/text()').get().strip())    
         else:
-            print('full event', tr.xpath('./td/text()').get().strip())
+            full_events.append(tr.xpath('./td/text()').get().strip())
     
+    print(full_events)
     if len(events) > 0:
         if len(events) > 1:
             return ", ".join(events)   
