@@ -50,7 +50,31 @@ def get_new_rows(response):
         if m.start() > start_ind:
             return response.text[start_ind: m.start()]
 
-def check_date(row_id, date_range_text, top_response):
+def get_event_viewstate(response):
+    event_validation = ''
+    view_state = ''
+    splits = response.text.split('|')
+    for v, vals in enumerate(splits):
+        if vals == '__EVENTVALIDATION':
+            event_validation = splits[v+1]
+        elif vals == '__VIEWSTATE':
+            view_state = splits[v+1]
+    assert len(view_state)+len(event_validation) > 0, "no view state or event val returned"
+    return event_validation, view_state
+
+def make_request(param_dict):
+    data_dict = {
+        'view_state': '',
+        'event_validation': '',
+        'profession':'',
+        'profession_ID': '-1',
+        'row_id': '',
+    }
+    for key, val in param_dict.items():
+        data_dict[key] = val
+    return request_date_template(data_dict)
+
+def check_date(row_id, date_range_text, top_response, medical=False):
     '''Check date range for new events
 
     Args:
@@ -63,8 +87,43 @@ def check_date(row_id, date_range_text, top_response):
 
     view_state = top_response.xpath('//div[@class="aspNetHidden"]/input[@name="__VIEWSTATE"]/@value').get()
     event_validation = top_response.xpath('//div[@class="aspNetHidden"]/input[@name="__EVENTVALIDATION"]/@value').get()
-    response = request_date(row_id, view_state, event_validation)
-    html_text_string = get_new_rows(response)
+
+    if medical:
+        prof = 'M'
+        prof_id = '63'
+    else:
+        prof='G'
+        prof_id = '68'
+    # choose general
+    data1 = {
+            'view_state':view_state, 
+            'event_validation':event_validation,
+            'profession':prof}
+    
+    first_response = make_request(data1)
+    ev1, vs1 = get_event_viewstate(first_response)
+    
+    # choose second general
+    data2 = {
+            'view_state':vs1, 
+            'event_validation':ev1,
+            'profession':prof,
+            'profession_ID': prof_id
+    }
+    second_response = make_request(data2)
+    ev2, vs2 = get_event_viewstate(second_response)
+
+
+    data3 = {
+            'view_state':vs2, 
+            'event_validation':ev2,
+            'profession':prof,
+            'profession_ID': prof_id,
+            'row_id': row_id,
+    }
+    third_response = request_date_template(data3)
+    
+    html_text_string = get_new_rows(third_response)
     new_text_response = HtmlResponse(url="my HTML string", body=html_text_string, encoding='utf-8')
     
     events = []
@@ -81,7 +140,7 @@ def check_date(row_id, date_range_text, top_response):
                 return events[0]
     return
 
-def request_date(row_id, view_state, event_validation):
+def request_date_template(data_dict):
     '''Generate POST request for changing row
 
     Args:
@@ -92,7 +151,7 @@ def request_date(row_id, view_state, event_validation):
         response (Response): POST response for changing dates
     '''
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:84.0) Gecko/20100101 Firefox/84.0',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:85.0) Gecko/20100101 Firefox/85.0',
         'Accept': '*/*',
         'Accept-Language': 'en-US,en;q=0.5',
         'X-Requested-With': 'XMLHttpRequest',
@@ -110,10 +169,10 @@ def request_date(row_id, view_state, event_validation):
       '__EVENTTARGET': 'ctl00$ContentPlaceHolder1$DropDownListOpKey',
       '__EVENTARGUMENT': '',
       '__LASTFOCUS': '',
-      '__VIEWSTATE': f'{view_state}',
+      '__VIEWSTATE': f'{data_dict["view_state"]}',
       '__VIEWSTATEGENERATOR': 'CA0B0334',
       '__VIEWSTATEENCRYPTED': '',
-      '__EVENTVALIDATION': f'{event_validation}',
+      '__EVENTVALIDATION': f'{data_dict["event_validation"]}',
       'ctl00$ContentPlaceHolder1$TextBoxTitle': '',
       'ctl00$ContentPlaceHolder1$TextBoxFirstName': '',
       'ctl00$ContentPlaceHolder1$TextBoxLastName': '',
@@ -139,9 +198,9 @@ def request_date(row_id, view_state, event_validation):
       'ctl00$ContentPlaceHolder1$TextBoxEmergencyName': '',
       'ctl00$ContentPlaceHolder1$TextBoxEmergencyRelationship': '',
       'ctl00$ContentPlaceHolder1$TextBoxEmergencyPhone': '',
-      'ctl00$ContentPlaceHolder1$DropDownListAreas': 'G',
-      'ctl00$ContentPlaceHolder1$HiddenFieldArea': 'G',
-      'ctl00$ContentPlaceHolder1$DropDownListProfessions': '68',
+      'ctl00$ContentPlaceHolder1$DropDownListAreas': f'{data_dict["profession"]}',
+      'ctl00$ContentPlaceHolder1$HiddenFieldArea': f'{data_dict["profession"]}',
+      'ctl00$ContentPlaceHolder1$DropDownListProfessions': f'{data_dict["profession_ID"]}',
       'ctl00$ContentPlaceHolder1$HiddenFieldProfessionLicenseReq': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldInsuranceReq': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldIsStudentProfession': '0',
@@ -158,7 +217,7 @@ def request_date(row_id, view_state, event_validation):
       'ctl00$ContentPlaceHolder1$TextBoxStudentYearOfStudy': '',
       'ctl00$ContentPlaceHolder1$TextBoxFaculty': '',
       'ctl00$ContentPlaceHolder1$DropDownListStateLimit': '47',
-      'ctl00$ContentPlaceHolder1$DropDownListOpKey': f'{row_id}',
+      'ctl00$ContentPlaceHolder1$DropDownListOpKey': f'{data_dict["row_id"]}',
       'ctl00$ContentPlaceHolder1$TextBoxAdminCode': '',
       'ctl00$ContentPlaceHolder1$TextBoxDocName1': '',
       'ctl00$ContentPlaceHolder1$TextBoxDocName2': '',
