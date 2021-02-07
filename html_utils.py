@@ -130,6 +130,8 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     for tr in new_text_response.xpath('//tr'):
         if len(tr.xpath('td/div/select')) > 0:
             events.append(tr.xpath('./td/text()').get().strip())    
+        else:
+            print('full event', tr.xpath('./td/text()').get().strip())
     
     if len(events) > 0:
         if len(events) > 1:
