@@ -89,17 +89,17 @@ def check_availability(from_address, to_address):
         email_opportunity(new_events, mailjet_key, mailjet_secret, from_address, to_address)
 
 
-    # testing out LA volunteer checking
-    la_url = 'https://appointments.lacounty.gov/vaccinestaffing/LocationsMap'
-    la_response = html_utils.request_page(la_url, client)
-    prev_full_text = 'Currently, ALL of the staffing slots for Clinical and Non-Clinical roles are FULL. Please check back regularly as future dates will be added.'
+    # # testing out LA volunteer checking
+    # la_url = 'https://appointments.lacounty.gov/vaccinestaffing/LocationsMap'
+    # la_response = html_utils.request_page(la_url, client)
+    # prev_full_text = 'Currently, ALL of the staffing slots for Clinical and Non-Clinical roles are FULL. Please check back regularly as future dates will be added.'
 
-    try:
-      new_alert_text = la_response.xpath('//div[contains(@class, "alert-danger")]/text()').get().strip()
-    except:
-      new_alert_text = ''
-    if prev_full_text != new_alert_text:
-      email_opportunity("new LA events", mailjet_key, mailjet_secret, from_address, "+19176993314@tmomail.net")
+    # try:
+    #   new_alert_text = la_response.xpath('//div[contains(@class, "alert-danger")]/text()').get().strip()
+    # except:
+    #   new_alert_text = ''
+    # if prev_full_text != new_alert_text:
+    #   email_opportunity("new LA events", mailjet_key, mailjet_secret, from_address, "+19176993314@tmomail.net")
 
 
 

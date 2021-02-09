@@ -134,9 +134,10 @@ def check_date(row_id, date_range_text, top_response, medical=False):
         else:
             full_events.append(tr.xpath('./td/text()').get().strip())
     
-    print(full_events)
+    print('full', full_events)
+    print('events', events)
     if len(events) > 0:
-        print(events)
+        print('at least 1 event')
         if len(events) > 1:
             return ", ".join(events)   
         else:
