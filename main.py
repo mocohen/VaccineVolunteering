@@ -96,7 +96,7 @@ def check_availability(from_address, to_address):
 
     try:
       new_alert_text = la_response.xpath('//div[contains(@class, "alert-danger")]/text()').get().strip()
-    else:
+    except:
       new_alert_text = ''
     if prev_full_text != new_alert_text:
       email_opportunity("new LA events", mailjet_key, mailjet_secret, from_address, "+19176993314@tmomail.net")
