@@ -86,7 +86,7 @@ def check_availability(from_address, to_address):
       new_events = html_utils.check_date(opt.xpath('.//@value').get(), opt.xpath('text()').get(), top_response=response)
       if new_events:
         # email opportunity if new event
-        email_opportunity(event, mailjet_key, mailjet_secret, from_address, to_address)
+        email_opportunity(new_events, mailjet_key, mailjet_secret, from_address, to_address)
 
 
     # testing out LA volunteer checking
