@@ -137,13 +137,11 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     print('full', full_events)
     print('events', events)
     if len(events) > 0:
-        print('at least 1 event')
         if len(events) > 1:
             return ", ".join(events)   
         else:
             date = datetime.strptime(events[0], '%a %b %d').replace(year=datetime.now().year)
-            if timedelta(days=1) > (datetime.now() - date):
-                print(datetime.now() - date)
+            if timedelta(days=1) < (datetime.now() - date):
                 return events[0]
     return
 
