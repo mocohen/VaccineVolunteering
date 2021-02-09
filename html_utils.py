@@ -113,7 +113,7 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     second_response = make_request(data2)
     ev2, vs2 = get_event_viewstate(second_response)
 
-
+    # request specific date range
     data3 = {
             'view_state':vs2, 
             'event_validation':ev2,
@@ -136,11 +136,13 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     
     print(full_events)
     if len(events) > 0:
+        print(events)
         if len(events) > 1:
             return ", ".join(events)   
         else:
             date = datetime.strptime(events[0], '%a %b %d').replace(year=datetime.now().year)
-            if timedelta(days=1) > datetime.now() - date:
+            if timedelta(days=1) > (datetime.now() - date):
+                print(datetime.now() - date)
                 return events[0]
     return
 
