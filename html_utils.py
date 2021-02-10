@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 
 from scrapy.http import TextResponse, HtmlResponse
@@ -140,8 +140,10 @@ def check_date(row_id, date_range_text, top_response, medical=False):
         if len(events) > 1:
             return ", ".join(events)   
         else:
-            date = datetime.strptime(events[0], '%a %b %d').replace(year=datetime.now().year)
-            if timedelta(days=1) < (datetime.now() - date):
+            offset = timezone(timedelta(hours=-8))
+            now = datetime.now(offset)
+            date = datetime.strptime(events[0], '%a %b %d').replace(year=now.year)
+            if timedelta(days=1) < (now - date):
                 return events[0]
     return
 
