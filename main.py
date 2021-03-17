@@ -46,7 +46,7 @@ def email_opportunity(event, api_key, api_secret, from_address, to_address):
             }
           ],
           "Subject": "New Volunteer opportunity.",
-          "TextPart": f"{event}\nhttps://volunteer.covidvaccineseattle.org/",
+          "TextPart": f"{event}\nhttps://communityvaccination.org/",
         }
       ]
     }
