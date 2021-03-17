@@ -67,9 +67,9 @@ def check_availability(from_address, to_address):
     '''
 
     # get secrets from google cloud
-    mailjet_key = gc_storage_utils.access_secret_version(234888381105, 'mailjetKey', 1)
-    mailjet_secret = gc_storage_utils.access_secret_version(234888381105, 'mailjetSecret', 1)
-    scrapy_api_key = gc_storage_utils.access_secret_version(234888381105, 'scraper_api_key', 1)
+    mailjet_key = gc_storage_utils.access_secret_version(230736833082, 'mailjetKey', 1)
+    mailjet_secret = gc_storage_utils.access_secret_version(230736833082, 'mailjetSecret', 1)
+    scrapy_api_key = gc_storage_utils.access_secret_version(230736833082, 'scraper_api_key', 1)
 
     # start scraper api client
     client = ScraperAPIClient(scrapy_api_key)
