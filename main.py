@@ -75,7 +75,8 @@ def check_availability(from_address, to_address):
     client = ScraperAPIClient(scrapy_api_key)
 
     
-    url = 'https://volunteer.covidvaccineseattle.org/'
+    # url = 'https://volunteer.covidvaccineseattle.org/'
+    url = 'https://communityvaccination.org'
 
     # get html response
     response = html_utils.request_page(url, client)

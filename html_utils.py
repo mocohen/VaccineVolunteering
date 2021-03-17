@@ -69,6 +69,7 @@ def make_request(param_dict):
         'profession':'',
         'profession_ID': '-1',
         'row_id': '',
+        'state_id': '',
     }
     for key, val in param_dict.items():
         data_dict[key] = val
@@ -93,14 +94,18 @@ def check_date(row_id, date_range_text, top_response, medical=False):
         prof_id = '63'
     else:
         prof='G'
-        prof_id = '68'
+        # prof_id = '68'
+        prof_id = '175'
     # choose general
     data1 = {
             'view_state':view_state, 
             'event_validation':event_validation,
-            'profession':prof}
+            'profession':prof,
+            'profession_ID': prof_id
+}
     
     first_response = make_request(data1)
+    # print( first_response.text)
     ev1, vs1 = get_event_viewstate(first_response)
     
     # choose second general
@@ -108,9 +113,13 @@ def check_date(row_id, date_range_text, top_response, medical=False):
             'view_state':vs1, 
             'event_validation':ev1,
             'profession':prof,
-            'profession_ID': prof_id
+            'profession_ID': prof_id,
+            'state_id':'47'
     }
     second_response = make_request(data2)
+    # print('\n\n\nsecond',second_response.text)
+    # print(f'\n\n\nrow id :{row_id}')
+
     ev2, vs2 = get_event_viewstate(second_response)
 
     # request specific date range
@@ -119,9 +128,11 @@ def check_date(row_id, date_range_text, top_response, medical=False):
             'event_validation':ev2,
             'profession':prof,
             'profession_ID': prof_id,
+            'state_id':'47',
             'row_id': row_id,
     }
     third_response = request_date_template(data3)
+    # print('\n\n\nthird',third_response.text)
     
     html_text_string = get_new_rows(third_response)
     new_text_response = HtmlResponse(url="my HTML string", body=html_text_string, encoding='utf-8')
@@ -142,7 +153,7 @@ def check_date(row_id, date_range_text, top_response, medical=False):
         else:
             offset = timezone(timedelta(hours=-8))
             now = datetime.now(offset)
-            date = datetime.strptime(events[0], '%a %b %d').replace(year=now.year)
+            date = datetime.strptime(events[0], '%a %b %d').replace(year=now.year, tzinfo=offset)
             if timedelta(days=1) < (now - date):
                 return events[0]
     return
@@ -165,10 +176,10 @@ def request_date_template(data_dict):
         'X-MicrosoftAjax': 'Delta=true',
         'Cache-Control': 'no-cache',
         'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
-        'Origin': 'https://volunteer.covidvaccineseattle.org',
+        'Origin': 'https://communityvaccination.org',
         'DNT': '1',
         'Connection': 'keep-alive',
-        'Referer': 'https://volunteer.covidvaccineseattle.org/',
+        'Referer': 'https://communityvaccination.org',
     }
 
     data = {
@@ -180,77 +191,80 @@ def request_date_template(data_dict):
       '__VIEWSTATEGENERATOR': 'CA0B0334',
       '__VIEWSTATEENCRYPTED': '',
       '__EVENTVALIDATION': f'{data_dict["event_validation"]}',
-      'ctl00$ContentPlaceHolder1$TextBoxTitle': '',
-      'ctl00$ContentPlaceHolder1$TextBoxFirstName': '',
-      'ctl00$ContentPlaceHolder1$TextBoxLastName': '',
-      'ctl00$ContentPlaceHolder1$TextBoxProfAbbre': '',
-      'ctl00$ContentPlaceHolder1$TextBoxBadge': '',
-      'ctl00$ContentPlaceHolder1$TextBoxPhone': '',
-      'ctl00$ContentPlaceHolder1$TextBoxPhoneConfirm': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxTitle': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxFirstName': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxLastName': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxProfAbbre': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxBadge': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxPhone': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxPhoneConfirm': '',
       'ctl00$ContentPlaceHolder1$DropDownListPhoneType': '-1',
-      'ctl00$ContentPlaceHolder1$TextBoxAddr1': '',
-      'ctl00$ContentPlaceHolder1$TextBoxAddr2': '',
-      'ctl00$ContentPlaceHolder1$TextBoxCity': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxAddr1': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxAddr2': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxCity': '',
       'ctl00$ContentPlaceHolder1$DropDownListState': '-1',
-      'ctl00$ContentPlaceHolder1$TextBoxZip': '',
-      'ctl00$ContentPlaceHolder1$TextBoxEmail': '',
-      'ctl00$ContentPlaceHolder1$TextBoxEmail2': '',
-      'ctl00$ContentPlaceHolder1$TextBoxUserName': '',
-      'ctl00$ContentPlaceHolder1$TextBoxPassword': '',
-      'ctl00$ContentPlaceHolder1$TextBoxPasswordVerify': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxZip': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxEmail': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxEmail2': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxUserName': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxPassword': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxPasswordVerify': '',
       'ctl00$ContentPlaceHolder1$DropDownTShirt': '-1',
       'ctl00$ContentPlaceHolder1$ListBoxLanguages': '-1',
-      'ctl00$ContentPlaceHolder1$TextBoxCompanyName': '',
-      'ctl00$ContentPlaceHolder1$TextBoxEmployersPlan': '',
-      'ctl00$ContentPlaceHolder1$TextBoxEmergencyName': '',
-      'ctl00$ContentPlaceHolder1$TextBoxEmergencyRelationship': '',
-      'ctl00$ContentPlaceHolder1$TextBoxEmergencyPhone': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxCompanyName': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxEmployersPlan': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxEmergencyName': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxEmergencyRelationship': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxEmergencyPhone': '',
+      'ctl00$ContentPlaceHolder1$RepeaterAttributes$ctl01$HiddenField1':'38',
+      'ctl00$ContentPlaceHolder1$RepeaterAttributes$ctl02$HiddenField1':'39',
+      'ctl00$ContentPlaceHolder1$RepeaterAttributes$ctl03$HiddenField1':'40',
       'ctl00$ContentPlaceHolder1$DropDownListAreas': f'{data_dict["profession"]}',
       'ctl00$ContentPlaceHolder1$HiddenFieldArea': f'{data_dict["profession"]}',
       'ctl00$ContentPlaceHolder1$DropDownListProfessions': f'{data_dict["profession_ID"]}',
       'ctl00$ContentPlaceHolder1$HiddenFieldProfessionLicenseReq': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldInsuranceReq': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldIsStudentProfession': '0',
-      'ctl00$ContentPlaceHolder1$TextBoxComments': '',
-      'ctl00$ContentPlaceHolder1$TextBoxLicense': '',
-      'ctl00$ContentPlaceHolder1$TextBoxLicenseDate': '',
-      'ctl00$ContentPlaceHolder1$TextBoxLiabilityInsurance': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxComments': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxLicense': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxLicenseDate': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxLiabilityInsurance': '',
       'ctl00$ContentPlaceHolder1$DropDownListStateLicense': '-1',
-      'ctl00$ContentPlaceHolder1$TextBoxLicenseComment': '',
-      'ctl00$ContentPlaceHolder1$TextBoxResLocation': '',
-      'ctl00$ContentPlaceHolder1$TextBoxResSupervisor': '',
-      'ctl00$ContentPlaceHolder1$TextBoxSchool': '',
-      'ctl00$ContentPlaceHolder1$TextBoxStudentFieldOfStudy': '',
-      'ctl00$ContentPlaceHolder1$TextBoxStudentYearOfStudy': '',
-      'ctl00$ContentPlaceHolder1$TextBoxFaculty': '',
-      'ctl00$ContentPlaceHolder1$DropDownListStateLimit': '47',
+      # 'ctl00$ContentPlaceHolder1$TextBoxLicenseComment': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxResLocation': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxResSupervisor': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxSchool': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxStudentFieldOfStudy': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxStudentYearOfStudy': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxFaculty': '',
+      'ctl00$ContentPlaceHolder1$DropDownListStateLimit': f'{data_dict["state_id"]}',
       'ctl00$ContentPlaceHolder1$DropDownListOpKey': f'{data_dict["row_id"]}',
-      'ctl00$ContentPlaceHolder1$TextBoxAdminCode': '',
-      'ctl00$ContentPlaceHolder1$TextBoxDocName1': '',
-      'ctl00$ContentPlaceHolder1$TextBoxDocName2': '',
-      'ctl00$ContentPlaceHolder1$TextBoxDocName3': '',
-      'ContentPlaceHolder1_ctlSignature_data': '',
-      'ContentPlaceHolder1_ctlSignature_data_smooth': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxAdminCode': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxDocName1': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxDocName2': '',
+      # 'ctl00$ContentPlaceHolder1$TextBoxDocName3': '',
+      # 'ContentPlaceHolder1_ctlSignature_data': '',
+      # 'ContentPlaceHolder1_ctlSignature_data_smooth': '',
       'ctl00$ContentPlaceHolder1$HiddenFieldVolKey': '0',
-      'ctl00$ContentPlaceHolder1$HiddenFieldOpAssignDayKeyList': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldAlternateOpAssignDayKeyList': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldDisplayedQuestionList': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldDisplayedAnswerList': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldWaitListed': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldOpAssignDayKeyList': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldAlternateOpAssignDayKeyList': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldDisplayedQuestionList': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldDisplayedAnswerList': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldWaitListed': '',
       'ctl00$ContentPlaceHolder1$HiddenFieldSignatureFile': 'none',
-      'ctl00$ContentPlaceHolder1$HiddenFieldYesValues': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldNoValues': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldDropDownValues': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldTextBoxValues': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldCommentList': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldYesValues': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldNoValues': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldDropDownValues': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldTextBoxValues': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldCommentList': '',
       'ctl00$ContentPlaceHolder1$HiddenFieldAdminKey': '0',
-      'ctl00$ContentPlaceHolder1$HiddenFieldInitialComments': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldInitialComments': '',
       'ctl00$ContentPlaceHolder1$HiddenFieldCommentsAllowed': 'False',
       'ctl00$ContentPlaceHolder1$HiddenFieldDropDownQKey': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldShowFaculty': 'False',
-      'ctl00$ContentPlaceHolder1$HiddenFieldOriginalFirstName': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldOriginalLastName': '',
-      'ctl00$ContentPlaceHolder1$HiddenFieldErrorClientIDArray': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldOriginalFirstName': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldOriginalLastName': '',
+      # 'ctl00$ContentPlaceHolder1$HiddenFieldErrorClientIDArray': '',
       'ctl00$ContentPlaceHolder1$HiddenFieldDesktop': 'True',
       'ctl00$ContentPlaceHolder1$HiddenFieldShowMatching': 'False',
       'ctl00$ContentPlaceHolder1$HiddenFieldProfileAllowed': 'False',
@@ -258,10 +272,10 @@ def request_date_template(data_dict):
       'ctl00$ContentPlaceHolder1$HiddenFieldVolDocKey': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldSignatureImageS3': '0',
       'ctl00$ContentPlaceHolder1$HiddenFieldSecretKey': '0',
-      'scrollY': '2215',
+      'scrollY': '2646',
       '__ASYNCPOST': 'true',
       '': ''
     }
 
-    response = requests.post('https://volunteer.covidvaccineseattle.org/', headers=headers, data=data)
+    response = requests.post('https://communityvaccination.org', headers=headers, data=data)
     return response
