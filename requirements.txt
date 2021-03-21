@@ -11,3 +11,4 @@ mailjet_rest
 google-cloud-bigquery         
 google-cloud-bigquery-storage 
 pandas
+pyarrow
