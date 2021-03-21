@@ -1,8 +1,9 @@
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 import re
 import gc_storage_utils
 import pytz
+import pandas as pd
 
 from scrapy.http import TextResponse, HtmlResponse
 
@@ -79,6 +80,7 @@ def make_request(param_dict):
 
 
 def str_to_datetime(date_str):
+    # print(date_str)
     return datetime.strptime(date_str, '%a %b %d').date()
 
 def date_to_bigquery(date):
@@ -159,38 +161,43 @@ def check_date(row_id, date_range_text, top_response, medical=False):
 
     events = []
     full_events = []
-    old_events = []
+    sent_events = []
     new_events = []
     for tr in new_text_response.xpath('//tr'):
         date_str = tr.xpath('./td/text()').get().strip()
-        date = str_to_datetime(date_str).replace(year=now.year)
 
 
         if len(tr.xpath('td/div/select')) > 0:
+            date = str_to_datetime(date_str).replace(year=now.year)
+
             if (date not in old_events.index.values) or \
-            timedelta(hours=3).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[event].last_accessed).total_seconds()):
-                new_events.append({u"date":date, u"last_accessed":timestamp_to_bigquery(datetime.now())})
-                events.append(date)
+            timedelta(hours=3).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[date].last_accessed).total_seconds()):
+                new_events.append({u"date":date_to_bigquery(date), u"last_accessed":timestamp_to_bigquery(datetime.now())})
+                events.append(date_str)
             else:
-                old_events.append(date)    
+                sent_events.append(date_str)    
         else:
-            full_events.append(date)
+            full_events.append(date_str)
 
 
-    gc_storage_utils.upload_new_dates(new_events)
     
     print('full', full_events)
-    print('old', old_events)
+    print('old', sent_events)
     print('events', events)
-    if len(events_dt) > 0:
-        if len(events) > 1:
+
+
+    if len(new_events) > 0:
+        gc_storage_utils.upload_new_dates(new_events)
+
+    if len(events) > 0:
+        # if len(events) > 1:
             return ", ".join(events)   
-        else:
+        # else:
             # offset = timezone(timedelta(hours=-8))
             # now = datetime.now(offset)
             # date = datetime.strptime(events[0], '%a %b %d').replace(year=now.year, tzinfo=offset)
-            if timedelta(days=.75) < (date - now):
-                return events[0]
+            # if timedelta(days=.75) < (date - now):
+                # return events[0]
     return
 
 def request_date_template(data_dict):
