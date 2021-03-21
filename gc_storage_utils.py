@@ -1,6 +1,43 @@
 from google.cloud import storage
 from google.cloud import secretmanager
 
+from google.cloud import bigquery
+from google.cloud import bigquery_storage
+
+import google.auth
+
+
+def retreive_past_dates():
+	credentials, your_project_id = google.auth.default(
+	    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+	)
+
+	# Make clients.
+	bqclient = bigquery.Client(credentials=credentials, project=your_project_id,)
+	bqstorageclient = bigquery_storage.BigQueryReadClient(credentials=credentials)
+
+	query_string = """
+	SELECT * 
+	FROM `vaccine-volunteering.dates_accessed.dates`
+	"""
+
+	dataframe = (
+	    bqclient.query(query_string)
+	    .result()
+	    .to_dataframe(bqstorage_client=bqstorageclient)
+	)
+	return dataframe
+
+def upload_new_dates(date_dict):
+	client = bigquery.Client()
+
+	
+	errors = client.insert_rows_json('vaccine-volunteering.dates_accessed.dates', date_dict)  # Make an API request.
+	if errors == []:
+	    print("New rows have been added.")
+	else:
+	    print("Encountered errors while inserting rows: {}".format(errors))
+
 def download_blob(bucket_name, source_blob_name, destination_file_name):
     """Downloads a blob from the bucket."""
     # bucket_name = "your-bucket-name"

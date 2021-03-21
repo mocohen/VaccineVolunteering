@@ -1,6 +1,8 @@
 import requests
 from datetime import datetime, timedelta, timezone
 import re
+import gc_storage_utils
+import pytz
 
 from scrapy.http import TextResponse, HtmlResponse
 
@@ -75,6 +77,16 @@ def make_request(param_dict):
         data_dict[key] = val
     return request_date_template(data_dict)
 
+
+def str_to_datetime(date_str):
+    return datetime.strptime(date_str, '%a %b %d').date()
+
+def date_to_bigquery(date):
+    return date.strftime('%Y-%m-%d')
+
+def timestamp_to_bigquery(date):
+    return date.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f %Z')
+
 def check_date(row_id, date_range_text, top_response, medical=False):
     '''Check date range for new events
 
@@ -137,24 +149,47 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     html_text_string = get_new_rows(third_response)
     new_text_response = HtmlResponse(url="my HTML string", body=html_text_string, encoding='utf-8')
     
+    #retrieve past events
+    old_events = gc_storage_utils.retreive_past_dates()
+    old_events = old_events.groupby('date').max()
+
+    # add timezone
+    offset = timezone(timedelta(hours=-8))
+	now = datetime.now(offset)
+
     events = []
     full_events = []
+    old_events = []
+    new_events = []
     for tr in new_text_response.xpath('//tr'):
+    	date_str = tr.xpath('./td/text()').get().strip()
+    	date = str_to_datetime(date_str).replace(year=now.year)
+
+
         if len(tr.xpath('td/div/select')) > 0:
-            events.append(tr.xpath('./td/text()').get().strip())    
+        	    if (date not in old_events.index.values) or \
+    			timedelta(hours=3).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[event].last_accessed).total_seconds()):
+        			new_events.append({u"date":date, u"last_accessed":timestamp_to_bigquery(datetime.now())})
+            		events.append(date)
+            	else:
+            		old_events.append(date)    
         else:
-            full_events.append(tr.xpath('./td/text()').get().strip())
+            full_events.append(date)
+
+
+    gc_storage_utils.upload_new_dates(new_events)
     
     print('full', full_events)
+    print('old', old_events)
     print('events', events)
-    if len(events) > 0:
+    if len(events_dt) > 0:
         if len(events) > 1:
             return ", ".join(events)   
         else:
-            offset = timezone(timedelta(hours=-8))
-            now = datetime.now(offset)
-            date = datetime.strptime(events[0], '%a %b %d').replace(year=now.year, tzinfo=offset)
-            if timedelta(days=1) < (now - date):
+            # offset = timezone(timedelta(hours=-8))
+            # now = datetime.now(offset)
+            # date = datetime.strptime(events[0], '%a %b %d').replace(year=now.year, tzinfo=offset)
+            if timedelta(days=.75) < (date - now):
                 return events[0]
     return
 
