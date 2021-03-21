@@ -145,34 +145,34 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     }
     third_response = request_date_template(data3)
     # print('\n\n\nthird',third_response.text)
-    
+
     html_text_string = get_new_rows(third_response)
     new_text_response = HtmlResponse(url="my HTML string", body=html_text_string, encoding='utf-8')
-    
+
     #retrieve past events
     old_events = gc_storage_utils.retreive_past_dates()
     old_events = old_events.groupby('date').max()
 
     # add timezone
     offset = timezone(timedelta(hours=-8))
-	now = datetime.now(offset)
+    now = datetime.now(offset)
 
     events = []
     full_events = []
     old_events = []
     new_events = []
     for tr in new_text_response.xpath('//tr'):
-    	date_str = tr.xpath('./td/text()').get().strip()
-    	date = str_to_datetime(date_str).replace(year=now.year)
+        date_str = tr.xpath('./td/text()').get().strip()
+        date = str_to_datetime(date_str).replace(year=now.year)
 
 
         if len(tr.xpath('td/div/select')) > 0:
-        	    if (date not in old_events.index.values) or \
-    			timedelta(hours=3).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[event].last_accessed).total_seconds()):
-        			new_events.append({u"date":date, u"last_accessed":timestamp_to_bigquery(datetime.now())})
-            		events.append(date)
-            	else:
-            		old_events.append(date)    
+            if (date not in old_events.index.values) or \
+            timedelta(hours=3).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[event].last_accessed).total_seconds()):
+                new_events.append({u"date":date, u"last_accessed":timestamp_to_bigquery(datetime.now())})
+                events.append(date)
+            else:
+                old_events.append(date)    
         else:
             full_events.append(date)
 
