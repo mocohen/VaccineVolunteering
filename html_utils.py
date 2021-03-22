@@ -171,7 +171,7 @@ def check_date(row_id, date_range_text, top_response, medical=False):
             date = str_to_datetime(date_str).replace(year=now.year)
 
             if (date not in old_events.index.values) or \
-            timedelta(hours=3).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[date].last_accessed).total_seconds()):
+            timedelta(hours=20).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[date].last_accessed).total_seconds()):
                 new_events.append({u"date":date_to_bigquery(date), u"last_accessed":timestamp_to_bigquery(datetime.now())})
                 events.append(date_str)
             else:
