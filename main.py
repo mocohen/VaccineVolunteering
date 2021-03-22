@@ -45,7 +45,7 @@ def email_opportunity(event, api_key, api_secret, from_address, to_address):
               "Name": "Morris"
             }
           ],
-          "Subject": "New Volunteer opportunity.",
+          "Subject": "New Volunteer Opportunity.",
           "TextPart": f"{event}\nhttps://communityvaccination.org/",
         }
       ]
@@ -81,26 +81,36 @@ def check_availability(from_address, to_address):
     # get html response
     response = html_utils.request_page(url, client)
 
-
-    # loop through available weeks, check for availability
-    for opt in response.xpath('//div[@id="ContentPlaceHolder1_UpdatePanelOpKey"]').xpath('.//option')[1:]:
-      new_events = html_utils.check_date(opt.xpath('.//@value').get(), opt.xpath('text()').get(), top_response=response)
-      if new_events:
-        # email opportunity if new event
-        email_opportunity(new_events, mailjet_key, mailjet_secret, from_address, to_address)
+        #retrieve past events
+    old_events = gc_storage_utils.retreive_past_dates()
+    old_events = old_events.groupby(['profession', 'date']).max()
 
 
-    # # testing out LA volunteer checking
-    # la_url = 'https://appointments.lacounty.gov/vaccinestaffing/LocationsMap'
-    # la_response = html_utils.request_page(la_url, client)
-    # prev_full_text = 'Currently, ALL of the staffing slots for Clinical and Non-Clinical roles are FULL. Please check back regularly as future dates will be added.'
+    intro_string = 'There are some new volunteer opportunities available for the groups listed below:\n'
+    message_string = ''
+    #loop through professions
+    for prof_code, profession in zip(['G', 'G-CP2', 'MP'], ['General', 'Community Partner 2', 'Medical']):
+        prof_str = ''
+        prof_df = old_events[old_events.index.get_level_values(0) ==prof_code]
+        if len(prof_df) > 0:
+            prof_df = old_events.loc[prof_code]
 
-    # try:
-    #   new_alert_text = la_response.xpath('//div[contains(@class, "alert-danger")]/text()').get().strip()
-    # except:
-    #   new_alert_text = ''
-    # if prev_full_text != new_alert_text:
-    #   email_opportunity("new LA events", mailjet_key, mailjet_secret, from_address, "+19176993314@tmomail.net")
+        # loop through available weeks, check for availability
+        for opt in response.xpath('//div[@id="ContentPlaceHolder1_UpdatePanelOpKey"]').xpath('.//option')[1:]:
+              new_events = html_utils.check_date(opt.xpath('.//@value').get(), 
+                                                    opt.xpath('text()').get(), 
+                                                    top_response=response,
+                                                    old_events = prof_df,
+                                                    profession= prof_code)
+              if new_events:
+                prof_str += f'{new_events}, '
+        if len(prof_str) > 0:
+            message_string += f'{profession}: {prof_str[:-2]}\n'
+                # email opportunity if new event
+    if len(message_string) > 0:
+        email_opportunity(intro_string+message_string, mailjet_key, mailjet_secret, from_address, to_address)
+
+
 
 
 

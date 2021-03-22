@@ -54,16 +54,21 @@ def get_new_rows(response):
             return response.text[start_ind: m.start()]
 
 def get_event_viewstate(response):
-    event_validation = ''
-    view_state = ''
+    viewstate_dict = {}
+    # event_validation = ''
+    # view_state = ''
     splits = response.text.split('|')
     for v, vals in enumerate(splits):
         if vals == '__EVENTVALIDATION':
-            event_validation = splits[v+1]
+            viewstate_dict["event_validation"] = splits[v+1]
         elif vals == '__VIEWSTATE':
-            view_state = splits[v+1]
-    assert len(view_state)+len(event_validation) > 0, "no view state or event val returned"
-    return event_validation, view_state
+            viewstate_dict["view_state"] = splits[v+1]
+        elif vals == '__VIEWSTATEGENERATOR':
+            viewstate_dict['generator'] = splits[v+1]
+
+
+    assert len(viewstate_dict) > 0, "no view state or event val returned" + response.text
+    return viewstate_dict
 
 def make_request(param_dict):
     data_dict = {
@@ -74,6 +79,9 @@ def make_request(param_dict):
         'row_id': '',
         'state_id': '',
     }
+    if not 'hidden_field' in param_dict:
+        param_dict['hidden_field'] = param_dict['profession']
+
     for key, val in param_dict.items():
         data_dict[key] = val
     return request_date_template(data_dict)
@@ -89,7 +97,7 @@ def date_to_bigquery(date):
 def timestamp_to_bigquery(date):
     return date.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f %Z')
 
-def check_date(row_id, date_range_text, top_response, medical=False):
+def check_date(row_id, date_range_text, top_response, old_events = [], profession='G'):
     '''Check date range for new events
 
     Args:
@@ -99,61 +107,88 @@ def check_date(row_id, date_range_text, top_response, medical=False):
     Returns:
         events (string): string with available events
     '''
-
+    print(profession)
     view_state = top_response.xpath('//div[@class="aspNetHidden"]/input[@name="__VIEWSTATE"]/@value').get()
     event_validation = top_response.xpath('//div[@class="aspNetHidden"]/input[@name="__EVENTVALIDATION"]/@value').get()
 
-    if medical:
+    if profession == 'MP':
         prof = 'M'
-        prof_id = '63'
-    else:
+        prof_id = '16'
+        license_req = '1'
+
+
+        data0 = {
+            'view_state':view_state, 
+            'event_validation':event_validation,
+            'generator':'CA0B0334',
+            'profession':prof,
+            'license_req': '0',
+            'hidden_field': 'G',
+        }            
+        zero_response = make_request(data0)
+        ev0 = get_event_viewstate(zero_response)
+
+        view_state = ev0['view_state']
+        event_validation = ev0['event_validation']
+
+
+    elif profession == 'G-CP2':
         prof='G'
-        # prof_id = '68'
         prof_id = '175'
+        license_req = '0'
+
+    elif profession == 'G':
+        prof_id = '68'
+        prof='G'
+        license_req = '0'
+
     # choose general
     data1 = {
             'view_state':view_state, 
             'event_validation':event_validation,
+            'generator':'CA0B0334',
             'profession':prof,
-            'profession_ID': prof_id
+            'profession_ID': prof_id,
+            'license_req':license_req
 }
     
     first_response = make_request(data1)
     # print( first_response.text)
-    ev1, vs1 = get_event_viewstate(first_response)
+    ev1 = get_event_viewstate(first_response)
     
     # choose second general
     data2 = {
-            'view_state':vs1, 
-            'event_validation':ev1,
+            'view_state':ev1['view_state'], 
+            'event_validation':ev1['event_validation'],
+            'generator': ev1['generator'],
             'profession':prof,
             'profession_ID': prof_id,
+            'license_req':license_req,
             'state_id':'47'
     }
     second_response = make_request(data2)
     # print('\n\n\nsecond',second_response.text)
     # print(f'\n\n\nrow id :{row_id}')
 
-    ev2, vs2 = get_event_viewstate(second_response)
+    ev2 = get_event_viewstate(second_response)
 
     # request specific date range
     data3 = {
-            'view_state':vs2, 
-            'event_validation':ev2,
+            'view_state':ev2['view_state'], 
+            'event_validation':ev2['event_validation'],
+            'generator': ev2['generator'],
             'profession':prof,
             'profession_ID': prof_id,
+            'license_req':license_req,
             'state_id':'47',
             'row_id': row_id,
     }
-    third_response = request_date_template(data3)
+    third_response = make_request(data3)
     # print('\n\n\nthird',third_response.text)
 
     html_text_string = get_new_rows(third_response)
     new_text_response = HtmlResponse(url="my HTML string", body=html_text_string, encoding='utf-8')
 
-    #retrieve past events
-    old_events = gc_storage_utils.retreive_past_dates()
-    old_events = old_events.groupby('date').max()
 
     # add timezone
     offset = timezone(timedelta(hours=-8))
@@ -170,9 +205,10 @@ def check_date(row_id, date_range_text, top_response, medical=False):
         if len(tr.xpath('td/div/select')) > 0:
             date = str_to_datetime(date_str).replace(year=now.year)
 
-            if (date not in old_events.index.values) or \
-            timedelta(hours=160).total_seconds() < abs((datetime.now(pytz.UTC)-old_events.loc[date].last_accessed).total_seconds()):
-                new_events.append({u"date":date_to_bigquery(date), u"last_accessed":timestamp_to_bigquery(datetime.now())})
+            if (date not in old_events.index.values):
+                new_events.append({u"date":date_to_bigquery(date), 
+                    u"last_accessed":timestamp_to_bigquery(datetime.now()),
+                    u"profession":profession})
                 events.append(date_str)
             else:
                 sent_events.append(date_str)    
@@ -230,7 +266,7 @@ def request_date_template(data_dict):
       '__EVENTARGUMENT': '',
       '__LASTFOCUS': '',
       '__VIEWSTATE': f'{data_dict["view_state"]}',
-      '__VIEWSTATEGENERATOR': 'CA0B0334',
+      '__VIEWSTATEGENERATOR': data_dict['generator'],
       '__VIEWSTATEENCRYPTED': '',
       '__EVENTVALIDATION': f'{data_dict["event_validation"]}',
       # 'ctl00$ContentPlaceHolder1$TextBoxTitle': '',
@@ -262,10 +298,10 @@ def request_date_template(data_dict):
       'ctl00$ContentPlaceHolder1$RepeaterAttributes$ctl02$HiddenField1':'39',
       'ctl00$ContentPlaceHolder1$RepeaterAttributes$ctl03$HiddenField1':'40',
       'ctl00$ContentPlaceHolder1$DropDownListAreas': f'{data_dict["profession"]}',
-      'ctl00$ContentPlaceHolder1$HiddenFieldArea': f'{data_dict["profession"]}',
+      'ctl00$ContentPlaceHolder1$HiddenFieldArea': f'{data_dict["hidden_field"]}',
       'ctl00$ContentPlaceHolder1$DropDownListProfessions': f'{data_dict["profession_ID"]}',
-      'ctl00$ContentPlaceHolder1$HiddenFieldProfessionLicenseReq': '0',
-      'ctl00$ContentPlaceHolder1$HiddenFieldInsuranceReq': '0',
+      'ctl00$ContentPlaceHolder1$HiddenFieldProfessionLicenseReq': data_dict['license_req'],
+      'ctl00$ContentPlaceHolder1$HiddenFieldInsuranceReq':  data_dict['license_req'],
       'ctl00$ContentPlaceHolder1$HiddenFieldIsStudentProfession': '0',
       # 'ctl00$ContentPlaceHolder1$TextBoxComments': '',
       # 'ctl00$ContentPlaceHolder1$TextBoxLicense': '',
