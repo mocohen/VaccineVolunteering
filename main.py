@@ -89,7 +89,7 @@ def check_availability(from_address, to_address):
     intro_string = 'There are some new volunteer opportunities available for the groups listed below:\n'
     message_string = ''
     #loop through professions
-    for prof_code, profession in zip(['G', 'G-CP2', 'MP'], ['General', 'Community Partner 2', 'Medical']):
+    for prof_code, profession in zip(['G', 'G-CP2', 'MP', 'G-CP2-DE'], ['General', 'Community Partner 2', 'CP-2: Data Entry','Medical']):
         prof_str = ''
         prof_df = old_events[old_events.index.get_level_values(0) ==prof_code]
         if len(prof_df) > 0:

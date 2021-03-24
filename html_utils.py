@@ -132,7 +132,7 @@ def check_date(row_id, date_range_text, top_response, old_events = [], professio
         event_validation = ev0['event_validation']
 
 
-    elif profession == 'G-CP2':
+    elif  'G-CP2' in profession:
         prof='G'
         prof_id = '175'
         license_req = '0'
@@ -150,7 +150,7 @@ def check_date(row_id, date_range_text, top_response, old_events = [], professio
             'profession':prof,
             'profession_ID': prof_id,
             'license_req':license_req
-}
+    }
     
     first_response = make_request(data1)
     # print( first_response.text)
@@ -198,14 +198,19 @@ def check_date(row_id, date_range_text, top_response, old_events = [], professio
     full_events = []
     sent_events = []
     new_events = []
+    add_date = True
     for tr in new_text_response.xpath('//tr'):
         date_str = tr.xpath('./td/text()').get().strip()
 
 
         if len(tr.xpath('td/div/select')) > 0:
             date = str_to_datetime(date_str).replace(year=now.year)
-
-            if (date not in old_events.index.values):
+            if 'DE' in profession:
+                add_date = False
+                for job in tr.xpath('td/div/select/option/text()').getall():
+                    if 'data' in job.lower():
+                        add_date = True
+            if add_date and (date not in old_events.index.values):
                 new_events.append({u"date":date_to_bigquery(date), 
                     u"last_accessed":timestamp_to_bigquery(datetime.now()),
                     u"profession":profession})
